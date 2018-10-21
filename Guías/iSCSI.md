@@ -423,7 +423,7 @@ tgtadm --lld iscsi --mode logicalunit --op new \
 --tid 3 --lun 3 --backing-store /dev/homelab/COMPARTIDO
 ```
 
-Para confirmar que todo ha salido bien, ejecutamos la operación `show` de nuevo:
+Para confirmar que todo ha salido bien, ejecutamos la operación `show` de nuevo y nos fijamos en el `Backing storage path`:
 
 ```sh
 Target 1: iqn.2018-09.net.cda.discos:homelab.UNO
@@ -564,7 +564,122 @@ tgtadm --lld iscsi --mode target --op bind --tid 3 \
 --initiator-address 192.168.100.33
 ```
 
+De nuevo, podemos comprobar que todo ha salido bien si ejecutamos la operación `show` del comando `tgtadm`. Esta vez deberemos fijarnos en el apartado `ACL Information`:
 
+```sh
+Target 1: iqn.2018-09.net.cda.discos:homelab.UNO
+    System information:
+        Driver: iscsi
+        State: ready
+    I_T nexus information:
+    LUN information:
+        LUN: 0
+            Type: controller
+            SCSI ID: IET     00010000
+            SCSI SN: beaf10
+            Size: 0 MB, Block size: 1
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: null
+            Backing store path: None
+            Backing store flags:
+        LUN: 1
+            Type: disk
+            SCSI ID: IET     00010001
+            SCSI SN: beaf11
+            Size: 55 MB, Block size: 512
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: rdwr
+            Backing store path: /dev/homelab/UNO
+            Backing store flags:
+    Account information:
+    ACL information:
+        192.168.100.22
+Target 2: iqn.2018-09.net.cda.discos:homelab.DOS
+    System information:
+        Driver: iscsi
+        State: ready
+    I_T nexus information:
+    LUN information:
+        LUN: 0
+            Type: controller
+            SCSI ID: IET     00020000
+            SCSI SN: beaf20
+            Size: 0 MB, Block size: 1
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: null
+            Backing store path: None
+            Backing store flags:
+        LUN: 2
+            Type: disk
+            SCSI ID: IET     00020002
+            SCSI SN: beaf22
+            Size: 55 MB, Block size: 512
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: rdwr
+            Backing store path: /dev/homelab/DOS
+            Backing store flags:
+    Account information:
+    ACL information:
+        192.168.100.33
+Target 3: iqn.2018-09.net.cda.discos:homelab.COMPARTIDO
+    System information:
+        Driver: iscsi
+        State: ready
+    I_T nexus information:
+    LUN information:
+        LUN: 0
+            Type: controller
+            SCSI ID: IET     00030000
+            SCSI SN: beaf30
+            Size: 0 MB, Block size: 1
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: null
+            Backing store path: None
+            Backing store flags:
+        LUN: 3
+            Type: disk
+            SCSI ID: IET     00030003
+            SCSI SN: beaf33
+            Size: 55 MB, Block size: 512
+            Online: Yes
+            Removable media: No
+            Prevent removal: No
+            Readonly: No
+            SWP: No
+            Thin-provisioning: No
+            Backing store type: rdwr
+            Backing store path: /dev/homelab/COMPARTIDO
+            Backing store flags:
+    Account information:
+    ACL information:
+        192.168.100.22
+        192.168.100.33
+```
 
 <a name="raid5-ext3"></a>
 ### Formateo EXT3
