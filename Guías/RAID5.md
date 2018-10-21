@@ -2,28 +2,25 @@
 
 ## Tabla de contenidos
 ---
-- [Instalación del entorno de prácticas](#install)
-- [Comprobación de recursos](#recursos)
-- [RAID5](#raid5)
-  - [Preparación de los dispositivos](#raid5-pre)
-  - [Creación del RAID5](#raid5-create)
-  - [Formateo EXT3](#raid5-ext3)
-  - [Montaje del RAID5](#raid-mnt)
-  - [Extensión de dispositivos](#raid-extend)
-  - [Extensión de almacenamiento](#raid-storage)
-- [Cuestiones](#cuestiones)
-- [Bibliografía](#biblio)
+- Instalación del entorno de prácticas
+- Comprobación de recursos
+- RAID5
+  - Preparación de los dispositivos
+  - Creación del RAID5
+  - Formateo EXT3
+  - Montaje del RAID5
+  - Extensión de dispositivos
+  - Extensión de almacenamiento
+- Cuestiones
+- Bibliografía
 
 
-<a name="install"></a>
 ## Instalación del entorno de prácticas
 ---
 Iniciamos el autoinstalador para Linux
 
 ```sh
-curl -o- \
-http://ccia.esei.uvigo.es/docencia/CDA/1819/practicas//ejercicio-lvm-raid.sh | \
-bash -
+curl -o- http://ccia.esei.uvigo.es/docencia/CDA/1819/practicas//ejercicio-lvm-raid.sh | bash -
 ```
 
 Nos mandará poner un identificador único. Después de esto, se nos abrirá nuestro nuevo entorno de pruebas.
@@ -39,7 +36,6 @@ startx
 Una vez tengamos nuestro entorno preparado, procederemos a ejecutar la aplicación `LXTerminal`.
 
 
-<a name="recursos"></a>
 ## Comprobación de recursos
 ---
 Comprobamos los discos disponibles con cualquiera de los siguientes comandos:
@@ -50,7 +46,7 @@ fdisk -l
 parted -l
 ```
 
-Personalmente prefiero `lsblk`. Una vez ejecutado esta es su salida:
+Personalmente prefiero `lsblk`. Una vez ejecutado ésta es su salida:
 
 ```sh
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
@@ -67,13 +63,11 @@ sdf      8:80   0  100M  0 disk
 Como podemos comprobar, el sistema está montado sobre el disco `sda` y la partición SWAP sobre el `sdb`, pero disponemos a mayores cuatro discos para poder trabajar a gusto.
 
 
-<a name="raid5"></a>
 ## RAID5
 ---
 Procederemos con la creación de un RAID5 utilizando los dispositivos `/dev/sdc1`, `/dev/sdd1` y `/dev/sde1`.
 
 
-<a name="raid5-pre"></a>
 ### Preparación de los dispositivos
 ---
 Primeramente, crearemos una partición primaria en los dispositivos `/dev/sdc`, `/dev/sdd` y `/dev/sde` asignándole todo el espacio disponible usando el comando `parted`.
@@ -105,7 +99,6 @@ sdf      8:80   0  100M  0 disk
 ```
 
 
-<a name="raid5-create"></a>
 ### Creación del RAID5
 ---
 Una vez creados los dispositivos necesarios para nuestro RAID, usaremos `mdadm` para construir y gestionar nuestro RAID5. En concreto ejecutaremos este comando:
@@ -207,7 +200,6 @@ Working Devices : 3
 ```
 
 
-<a name="raid5-ext3"></a>
 ### Formateo EXT3
 ---
 Para formatear nuestro RAID en formato `ext3` ejecutaremos
@@ -231,7 +223,7 @@ Escribiendo superbloques y la información contable del sistema de ficheros:
 0/2hecho
 ```
 
-<a name="raid5-mnt"></a>
+
 ### Montaje del RAID5
 ---
 Montaremos nuestro RAID5 de la siguiente manera
@@ -297,7 +289,7 @@ S.ficheros     Tipo Tamaño Usados  Disp Uso% Montado en
 /dev/md127     ext3   186M   1,6M  175M   1% /mnt/raid
 ```
 
-Esto se debe a que el archivo `allzeros` no ocupa espacio real en el disco, dado que esta formado por bytes nulos.
+Esto se debe a que el archivo `allzeros` no ocupa espacio real en el disco, dado que está formado por bytes nulos.
 
 Si copiásemos cualquier otro fichero, el espacio sí que variaría:
 
@@ -314,7 +306,6 @@ S.ficheros     Tipo Tamaño Usados  Disp Uso% Montado en
 ```
 
 
-<a name="raid5-extend"></a>
 ### Extensión de dispositivos
 ---
 Lo primero será desmontar nuestro RAID
@@ -436,7 +427,6 @@ Working Devices : 4
 ```
 
 
-<a name="raid5-storage"></a>
 ### Extensión de almacenamiento
 ---
 Aunque nuestro RAID cuenta con un nuevo dispositivo, debemos redimensionar el espacio disponible.
@@ -537,7 +527,6 @@ También podemos comprobar que sigue estando nuestro archivo de prueba llamado `
 ¡Todo perfecto!
 
 
-<a name="cuestiones"></a>
 ## Cuestiones
 ---
 | # | Pregunta | Respuesta |
@@ -546,7 +535,6 @@ También podemos comprobar que sigue estando nuestro archivo de prueba llamado `
 | 2 | ¿Por qué en este caso sí es conveniente que las dos particiones de /dev/sde estén asignadas al mismo ”subarray” RAID0? | En este caso, si falla el dispositivo `sde`, quedará el mirror en los dispositivos `sdc` y `sdd`, por lo que el siistema de almacenamiento seguiría funcionando de forma correcta |
 
 
-<a name="biblio"></a>
 ## Bibliografía
 ---
 - [x] https://github.com/Student-Puma/HomeLab
