@@ -1,4 +1,4 @@
-# Volúmenes lógicos y RAID software en GNU/Linux
+# SAN con iSCSI y sistemas de ficheros OCFS2
 
 ## Tabla de contenidos
 ---
