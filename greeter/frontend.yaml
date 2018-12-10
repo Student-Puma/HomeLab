@@ -1,0 +1,41 @@
+# https://k8s.io/examples/service/access/frontend.yaml
+apiVersion: apps/v1     # Versión YAML de K8s
+kind: Deployment        # Táctica de despliegue
+metadata:
+  name: frontend        # Nombre de la aplicación
+spec:
+  selector:             # Seleccionador de Pods...
+    matchLabels:
+      app: hello        # ... que se llamen hello ...
+      tier: frontend    # ... que sean parte del frontend ...
+      release: stable   # ... y que sean lanzamientos estables
+  replicas: 1           # Creamos sólo un Pod
+  template:             # Plantilla del Pod:
+    metadata:
+      labels:
+        app: hello      # - Nombre: hello
+        tier: frontend  # - Forman parte del frontend
+        release: stable # - Lanzamiento estable
+    spec:
+      containers:       # Contenedor Docker usado por el Pod
+      - name: nginx
+        image: "gcr.io/google-samples/hello-frontend:1.0"
+        lifecycle:
+          preStop:      # Comando para detener de manera correcta
+            exec:       # el servicio durante el cierre
+              command: ["/usr/sbin/nginx","-s","quit"]
+---
+apiVersion: v1        # Versión YAML de K8s
+kind: Service         # Desplegamos un servicio
+metadata:
+  name: frontend      # Nombre: frontend
+spec:
+  selector:           # Seleccionador de Pods...
+    app: hello        # ... que se llamen 'hello' ...
+    tier: frontend    # ... y que sean parte del frontend
+  ports:              # Apertura de puertos:
+  - protocol: "TCP"   # - Protocolo TCP
+    port: 80          # - Puerto 80 (escucha)
+    targetPort: 80    # - Puerto 80 (port-forward)
+  type: LoadBalancer  # Distribuye las peticiones ...
+                      # ... entre los diferentes backend

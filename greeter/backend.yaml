@@ -1,0 +1,41 @@
+# https://kubernetes.io/docs/tasks/access-application-cluster/connecting-frontend-backend/
+
+# https://k8s.io/examples/service/access/hello.yaml
+apiVersion: apps/v1     # Versión YAML de K8s
+kind: Deployment        # Táctica de despliegue
+metadata:
+  name: hello           # Nombre de la aplicación
+spec:
+  selector:             # Seleccionador de Pods...
+    matchLabels:
+      app: hello        # ... que se llamen hello ...
+      tier: backend     # ... que sean parte del backend ...
+      release: stable   # ... y que sean lanzamientos estables
+  replicas: 7           # Creamos 7 Pods iguales
+  template:             # Plantilla de los Pods:
+    metadata:
+      labels:
+        app: hello      # - Nombre: hello
+        tier: backend   # - Forman parte del backend
+        release: stable # - Lanzamiento estable
+    spec:
+      containers:       # Contenedor Docker usado por el Pod
+        - name: hello
+          image: "gcr.io/google-samples/hello-go-gke:1.0"
+          ports:        # Apertura de puertos
+            - name: http
+              containerPort: 80
+---
+# https://k8s.io/examples/service/access/hello-service.yaml
+apiVersion: v1        # Versión YAML de K8s
+kind: Service         # Desplegamos un servicio
+metadata:
+  name: hello         # Nombre: hello
+spec:
+  selector:           # Seleccionador de Pods...
+    app: hello        # ... que se llamen 'hello' ...
+    tier: backend     # ... y que sean parte del backend
+  ports:              # Apertura de puertos:
+  - protocol: TCP     # - Protocolo TCP
+    port: 80          # - Puerto 80
+    targetPort: http  # - Servicio HTTP
