@@ -108,13 +108,16 @@ El script de instalación es el siguiente:
 [[ $(lsb_release -is) = 'elementary' ]] && dist='xenial' || dist=$(lsb_release -cs)
 
 # Install the dependecies
-dependecies=( curl virtualbox-qt apt-transport-https software-properties-common ca-certificates kubectl kubeadm )
+dependecies=( curl virtualbox-qt apt-transport-https software-properties-common
+  ca-certificates kubectl kubeadm )
 for dep in ${dependecies[@]};do
   # Kubectl needs prerequisites
   if [ $dep = kubectl ]; then
     if [ ! -f /etc/apt/sources.list.d/kubernetes.list ]; then
-      curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | $sudo apt-key add -
-      echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | $sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+      curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg |
+        $sudo apt-key add -
+      echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" |
+        $sudo tee -a /etc/apt/sources.list.d/kubernetes.list
       $sudo apt-get update -y
     fi
   fi
@@ -127,20 +130,25 @@ done
 # Docker Setup
 if ! which docker &>/dev/null; then
   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | $sudo apt-key add -
-  $sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $dist stable"
+  $sudo add-apt-repository "deb [arch=amd64]
+    https://download.docker.com/linux/ubuntu $dist stable"
   $sudo apt-get update -y
-  $sudo apt-get install -y docker-ce=$(apt-cache madison docker-ce | cut -d" " -f4 | grep 18.06.0)
+  $sudo apt-get install -y docker-ce=$(apt-cache madison docker-ce |
+    cut -d" " -f4 | grep 18.06.0)
 fi
 
 # Get the latest version name
 MINIKUBE_VERSION() {
-  curl --silent "https://api.github.com/repos/kubernetes/minikube/releases/latest" |
-  grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+  curl --silent
+    "https://api.github.com/repos/kubernetes/minikube/releases/latest" |
+    grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
 # Download and install Minikube
 if ! which minikube &>/dev/null; then
-  curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(MINIKUBE_VERSION)/minikube-linux-amd64
+  curl -Lo minikube
+    https://storage.googleapis.com/minikube/releases/
+      $(MINIKUBE_VERSION)/minikube-linux-amd64
   chmod +x minikube
   $sudo mv minikube /usr/local/bin/
 fi
@@ -186,9 +194,12 @@ To start using your cluster, you need to run the following as a regular user:
 
 [...]
 
-You can now join any number of machines by running the following on each node as root:
+You can now join any number of machines by running the following on each
+node as root:
 
-  kubeadm join 192.168.0.18:6443 --token ybm1yx.umimbi3emsbhb59t --discovery-token-ca-cert-hash sha256:c5ef3003e785d68684a7bf9ec5ba9ee4411421be988de65a17b1a2e22b7af3ed
+  kubeadm join 192.168.0.18:6443 --token ybm1yx.umimbi3emsbhb59t
+      --discovery-token-ca-cert-hash
+      sha256:c5ef3003e785d68684a7bf9ec5ba9ee4411421be988de65a17b1a2e22b7af3ed
 ```
 
 El siguiente paso será copiar el archivo de configuración como un usuario sin privilegios, tal como nos indica el mensaje:
