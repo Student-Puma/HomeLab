@@ -1,20 +1,56 @@
 ## Orquestación de contenedores Docker sobre múltiples máquinas físicas con Kubernetes.
 ![k8s](https://img.shields.io/badge/aprendiendo%20sobre-kubernetes-blue.svg?style=for-the-badge) ![cda](https://img.shields.io/badge/cda-2018-yellow.svg?style=for-the-badge)
 
-
-
-### Contextualización
 ---
 
 
-#### Antes de nada... ¿Qué es Kubernetes?
+
+### 👥 Autores
+---
+| DNI | Nombre(s) | Apellidos |
+| --- | --- | --- |
+| 77482941N | Diego Enrique | Fontán Lorenzo |
+| 44844497V | Jordan | Oreiro Vieites |
+| 54151674Z | Diego Stéphan | Jeandon Rodríguez |
+
+
+
+### 📝 **Tabla de contenidos**
+---
+- Contextualización
+  - Objetivo del proyecto
+  - Antes de nada... ¿Qué es Kubernetes?
+  - Kubernetes 101
+  - Kubernetes vs Docker Swarm
+- Herramientas y entorno
+  - Productos empleados
+  - Instalación del entorno
+  - Configuración del entorno
+  - Configuración de las comunicaciones
+- Desplegando el entorno
+  - Creación de las aplicaciones
+- Bibliografía
+
+
+
+### 🌐 **Contextualización**
+---
+
+
+
+#### **Objetivo del proyecto**
+---
+Conseguir desplegar contenedores Docker en varias máquinas físicas y orquestarlas desde una máquina maestra mediante Kubernetes.
+
+
+#### **Antes de nada... ¿Qué es Kubernetes?**
 ---
 **Kubernetes** (o k8s) es un sistema de código abierto creado por Google. Su principal objetivo es la gestión y orquestación de contenedores Docker.
 
 A grandes rasgos, Kubernetes suple las carencias que tiene Docker tales como el despliegue, escalado y monitorización de los contenedores. De esta forma, podemos decir que ***k8s*** es, básicamente, un **Docker con superpoderes**.
 
 
-#### Kubernetes 101
+#### **Kubernetes 101**
 ---
 **Kubernetes** tiene una estuctura jerárquica de máquinas dentro de un `clúster`. Explicada de manera simple, se basa en la coordinación entre una máquina `master` y varias máquinas esclavas llamadas `nodes`.
 
@@ -23,7 +59,7 @@ Cada `node` está formado a su vez por un conjunto de aplicaciones llamadas `pod
 Dentro de los `pods` es donde corremos nuestros contenedores **Docker**.
 
 
-#### Kubernetes vs Docker Swarm
+#### **Kubernetes vs Docker Swarm**
 ---
 Si es cierto que **Kubernetes** mejora **Docker**, este último cuenta con una herramienta propia llamada **Docker Swarm** con la que orquestar contenedores.
 
@@ -33,16 +69,22 @@ Aún así, **Docker Swarm** es mucho más sencillo de implementar, a lo que **Ku
 
 
 
-### Herramientas y entorno
+### 🔧 **Herramientas y entorno**
 ---
 
 
-#### Productos empleados
+
+#### **Productos empleados**
 ---
-............
+Para realizar este proyecto utilizaremos las siguientes herramientas:
+
+- Dos o más máquinas físicas conectadas a una misma red
+- Docker Community Edition
+- Kubernetes: Minikube, Kubeadm y Kubectl
+- Tres mentes curiosas y mucha paciencia
 
 
-#### Instalación del entorno
+#### **Instalación del entorno**
 ---
 Antes de nada debemos instalar las herramientas necesarias en nuestros dispositivos o máquinas virtuales.
 
@@ -104,9 +146,16 @@ if ! which minikube &>/dev/null; then
 fi
 ```
 
-#### Configurando el entorno
+
+#### **Configurando el entorno**
 ---
 Lo primero será iniciar el `master node` (aquel que manejará el resto de nodos) usando el comando.
+
+Empezaremos levantando `minikube`:
+
+```bash
+minikube start --vm-provider virtualbox
+```
 
 Descargaremos de antemano las imágenes Docker necesarias ejecutando:
 
@@ -162,29 +211,79 @@ Después de unos pocos segundos podemos observar que ya tenemos los `nodes` en n
 kubectl get nodes
 ```
 
-## Desplegando aplicaciones
+
+#### **Configuración de las comunicaciones**
+---
+Los `nodes` no se pueden comunicar entre sí sin que exista un `network pod`, así que ejecutaremos:
+
+```bash
+kubectl apply --filename
+  “https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version |
+  base64 | tr -d ‘\n’)
+```
+
+> `kubectl apply --filename <archivo de configuración.yaml>` nos permite
+> crear o modificar `pods` dentro del `cluster`
+
+
+
+
+## 🚀 Desplegando el entorno
+---
+
+
+
+#### **Creación de las aplicaciones**
 ---
 Ahora procederemos a desplegar una aplicación en nuestro `master node`, la cual se ejecutará en uno de los `nodes` del `cluster`.
 
+En este caso desplegaremos el **Kubernetes Dashboard** sacado del repositorio oficial de Kubernetes que nos permitirá acceder a una interfaz visual del `cluster`.
+
 Para ello, sólamente deberemos escribir:
-
-```bash
-kubectl apply --filename <archivo de configuración.yaml>
-```
-
-En este caso desplegaremos el **Kubernetes Dashboard** sacado del repositorio oficial de Kubernetes que nos permitirá acceder a una interfaz visual del `cluster`:
 
 ```bash
 kubectl apply --filename https://bit.ly/2Lb76yP
 ```
 
+Cambiamos la configuración del Dashboard de `ClusterIP` a `NodePort` para poder acceder a él:
+
+```bash
+kubectl -n kube-system edit service kubernetes-dashboard
+```
+
+Sólamente nos falta obtener el puerto que está utilizando para poder acceder desde el navegador con la dirección `https://localhost:<port>`:
+
+```bash
+kubectl -n kube-system get service kubernetes-dashboard -o
+  template --template="{{ (index .spec.ports 0).nodePort }}" |
+  xargs echo
+```
+
+¡Ahora ya podemos acceder a nuestro Dashboard!
+
+![Dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/docs/dashboard-ui.png)
+
+> En la presentación se propondrá otro tipo de aplicación a desplegar
+> en nuestro `cluster`. Este tipo de aplicación será una formada por un
+> **Frontend** y siete **Backends**
 
 
-- [ ] https://kubernetes.io/docs/home/
-- [ ] https://www.nubersia.com/es/blog/kubernetes-vs-docker-swarm/
-- [ ] https://kubernetes.io/docs/setup/independent/install-kubeadm/
-- [ ] https://gist.github.com/alexellis/fdbc90de7691a1b9edb545c17da2d975
-- [ ] https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
-- [ ] https://downey.io/blog/how-to-build-raspberry-pi-kubernetes-cluster/
-- [ ] https://blog.sicara.com/build-own-cloud-kubernetes-raspberry-pi-9e5a98741b49
-- [ ] http://www.javiergarzas.com/2016/02/kubernetes-for-dummies-explicado-en-10-minutos.html
+
+## 📚 **Bibliografía**
+---
+- [x] https://github.com/Student-Puma/Homelab
+
+
+- [x] https://kubernetes.io/docs/home/
+- [x] https://enmilocalfunciona.io/introduccion-a-kubernetes-i/
+- [x] https://www.nubersia.com/es/blog/kubernetes-vs-docker-swarm/
+- [x] https://kubernetes.io/docs/setup/independent/install-kubeadm/
+- [x] https://www.weave.works/blog/weave-net-kubernetes-integration/
+- [x] https://gist.github.com/alexellis/fdbc90de7691a1b9edb545c17da2d975
+- [x] https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
+- [x] https://blog.hypriot.com/post/setup-kubernetes-raspberry-pi-cluster/
+- [x] https://downey.io/blog/how-to-build-raspberry-pi-kubernetes-cluster/
+- [x] https://blog.sicara.com/build-own-cloud-kubernetes-raspberry-pi-9e5a98741b49
+- [x] http://www.javiergarzas.com/2016/02/kubernetes-for-dummies-explicado-en-10-minutos.html
+- [x] https://kubecloud.io/setting-up-a-kubernetes-1-11-raspberry-pi-cluster-using-kubeadm-952bbda329c8
+- [x] https://kubecloud.io/setup-a-kubernetes-1-9-0-raspberry-pi-cluster-on-raspbian-using-kubeadm-f8b3b85bc2d1
