@@ -23,8 +23,8 @@ if [[ $wlan_net = '' ]]; then
 fi
 
 # Start K8s
-minikube	start	--vm-driver	virtualbox                                                                           || exit 1
-$sudo kubeadm	config	images pull                                                                                  || exit 1
+minikube start --vm-driver virtualbox                                                                             || exit 1
+$sudo kubeadm config images pull                                                                                  || exit 1
 $sudo kubeadm	init --pod-network-cidr $wlan_net --apiserver-advertise-address=$wlan_address                       || exit 1
 # Configuration files
 mkdir -p $HOME/.kube
