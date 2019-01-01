@@ -78,11 +78,15 @@ Por último configuraremos los **Security Groups** de tal forma que sólo nos po
 
 <img src=".img/ec2-security.png" align="center">
 
+> **Cuestión2** Un *Security Group* es un conjunto de reglas que forman un firewall virtual para poder controlar el tráfico de una o varias instancias.
+
 Aceptamos todo y lanzamos nuestra instancia.
 
 Si no tenemos un par de claves creados, los generaremos de la siguiente forma:
 
 <img src=".img/ec2-keypair.png" align="center">
+
+> **Cuestión3** El par de llaves de AWS es un método criptográfico de clave pública que nos permite cifrar ciertos datos para realizar las pertinentes conexiones, como la contraseña. Por otro lado, el destinatario utiliza la clave privada para descrifrar dichos datos.
 
 ¡Y ya estaría! Nuestra instancia de un Ubuntu Server 14.04 LTS estaría siendo ejecutada ahora mismo:
 
@@ -181,9 +185,124 @@ Para detener la instancia, la seleccionaremos en el Panel de Control de Amazon E
 <img src=".img/ec2-stop.png" align="center">
 
 
+## Creación de varias instancias
+---
+
+Esta vez crearemos la instancia con la opción **Shutdown behaviour** en **Stop**:
+
+<img src=".img/ec2-stopshutdown.png" align="center">
+
+Además le agregaremos un disco **SSD de 16Gbi**:
+
+<img src=".img/ec2-ssd.png" align="center">
+
+Una vez creada, accedemos a ella a través del puerto 22 (SSH) y comprobamos la presencia de los dos discos duros con `cat /proc/partitions`:
+
+```
+ubuntu@ip-172-30-0-24:~$ cat /proc/partitions 
+major minor  #blocks  name
+
+ 202        0    8388608 xvda
+ 202        1    8377897 xvda1
+ 202       16   16777216 xvdb
+```
+
+Como podemos observar, tenemos un dispositivo `xvda` formateado como `xvda1`, el cual contiene el sistema operativo, y otro dispositivo `xvdb` de 16Gbi que es el añadido.
+
+Ahora formatearemos el disco `xvdb` con el comando:
+
+```bash
+sudo mkfs.ext4 /dev/xvdb
+```
+
+Esta será la salida:
+
+```
+mke2fs 1.42.9 (4-Feb-2014)
+Filesystem label=
+OS type: Linux
+Block size=4096 (log=2)
+Fragment size=4096 (log=2)
+Stride=0 blocks, Stripe width=0 blocks
+1048576 inodes, 4194304 blocks
+209715 blocks (5.00%) reserved for the super user
+First data block=0
+Maximum filesystem blocks=4294967296
+128 block groups
+32768 blocks per group, 32768 fragments per group
+8192 inodes per group
+Superblock backups stored on blocks: 
+	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+	4096000
+
+Allocating group tables: done                            
+Writing inode tables: done                            
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information: done
+```
+
+> Para comprobar el correcto funcionamiento del nuevo disco, vamos a montarlo
+
+```bash
+# Montamos el disco
+sudo mkdir /cda2018
+sudo mount /dev/xvdb /cda2018
+# Comprobamos el punto de montaje
+df -Th /cda2018
+```
+
+Veremos la siguiente salida:
+
+```
+Filesystem     Type  Size  Used Avail Use% Mounted on
+/dev/xvdb      ext4   16G   44M   15G   1% /cda2018
+```
+
+Por último añadimos la línea `/dev/xvdb /cda2018 ext4 noatime 0 0` al archivo `/etc/fstab`
+
+y crearemos un archivo de texto en `/cda2018` con la frase *CDA2018_tarea3*.
+
+---
+
+Duplicaremos la instancia de las siguientes maneras:
+
+- Actions > Launch More Like This
+
+<img src=".img/ec2-morelikethis.png" align="center">
+
+> **Cuestión4** El método *Launch More Like This* nos permite duplicar una instancia, la cual será usada como plantilla, para poder desplegar muchas similares haciendo que AWS copie los datos de configuración de esta, pero no clonándola directamente.
+
+
+- Actions > Image > Create Image
+
+<img src=".img/ec2-createimage.png" align="center">
+
+> **Cuestión4** El método *Create Image* sí que clona la instancia, haciendo a partir de ella una imagen que será igual a la original.
+
+
+## Vinculando volúmenes
+---
+Crearemos un *snapshot* del volumen de nuestra imagen usando el **Dashboard EC2**:
+
+<img src=".img/ec2-snap.png" align="center">
+
+> **Cuestión5** Los *snapshots* son una forma de poder preservar el estado actual de los volúmenes de una instancia (o dispositivos). De esta forma, podremos compartir o restaurar el estado de una instancia.
+
+Una vez creado el *snapshot* lo usaremos para crear otro volumen:
+
+<img src=".img/ec2-volume.png" align="center">
+
+Y lo vinculamos a una de las instancias ya creadas (en este caso **launch_more**):
+
+<img src=".img/ec2-attach.png" align="center">
+
+Ahora modificamos el texto de nuestro fichero alojado en `/cda2018` y vinculamos el volumen a la instancia `create_image`.
+
+
 ## Bibliografía
 ---
 - [x] https://github.com/Student-Puma/HomeLab
 - [x] https://www.dev-metal.com/install-setup-php-5-6-ubuntu-14-04-lts/
+- [x] https://docs.aws.amazon.com/es_es/AWSEC2/latest/UserGuide/ec2-key-pairs.html
 - [x] https://www.digitalocean.com/community/tutorials/como-instalar-linux-apache-mysql-php-lamp-en-ubuntu-16-04-es
 - [x] https://cursos.faitic.uvigo.es/tema1819/claroline/document/goto/index.php/2018-2019/AWS-EC2_2018.pdf
