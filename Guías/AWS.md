@@ -199,7 +199,7 @@ Además le agregaremos un disco **SSD de 16Gbi**:
 Una vez creada, accedemos a ella a través del puerto 22 (SSH) y comprobamos la presencia de los dos discos duros con `cat /proc/partitions`:
 
 ```
-ubuntu@ip-172-30-0-24:~$ cat /proc/partitions 
+ubuntu@ip-172-30-0-24:~$ cat /proc/partitions
 major minor  #blocks  name
 
  202        0    8388608 xvda
@@ -231,12 +231,12 @@ Maximum filesystem blocks=4294967296
 128 block groups
 32768 blocks per group, 32768 fragments per group
 8192 inodes per group
-Superblock backups stored on blocks: 
-	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208, 
+Superblock backups stored on blocks:
+	32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
 	4096000
 
-Allocating group tables: done                            
-Writing inode tables: done                            
+Allocating group tables: done
+Writing inode tables: done
 Creating journal (32768 blocks): done
 Writing superblocks and filesystem accounting information: done
 ```
