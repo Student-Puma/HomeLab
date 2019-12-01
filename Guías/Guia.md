@@ -1,9 +1,8 @@
 # Vulnerabilidades Web y uso de mod-security
 
 ## 👨 Autor
----
 
-- Diego Enrique Fontán Lorenzo [77482941N]
+- [Diego Enrique Fontán Lorenzo](https://www.linkedin.com/in/kikepuma) [77482941N]
 
 ## 🅰️ Buffer Overflow
 ---
@@ -513,3 +512,108 @@ Por la longitud y el formato es fácil preveer que es un `MD5`, lo cual nos vien
 
 En este caso, si buscamos en páginas como `HashKiller.co.uk` (la cual es de mis favoritas), vemos que dicho `MD5` corresponde a la contraseña `abc123`.
 
+## ⚠️ mod_security
+
+Ante la imposibilidad de realizar pruebas en las máquinas por el error ya comentado, me dispondré a realizar una guía de instalación de `mod_security` (en mi caso, una máquina `Debian`):
+
+### 📦 Instalación
+
+Empezaremos instalando mediante `apt` el módulo:
+
+        apt install libapache2-modsecurity
+
+Nada más intentarlo, me ha saltado el siguiente error:
+
+        (EAI 5) No address associated with hostname: mod_unique_id: unable to find IPv4 address of
+
+Investigando un poco, esto viene dado porque `mod_security` requiere el uso de `mod_unique_id` el cual construye *magic tokens* a partir del *hostname*, por lo que hay que asignarle un host válido al servidor.
+
+En mi caso añadiré mi host a `/etc/hosts` y reiniciaré `apache`:
+
+```sh
+service apache2 stop
+nano /etc/hosts
+        127.0.0.1 localhost ssi.web
+service apache2 start
+apachectl -M 2>/dev/null | grep security
+```
+
+        security2_module (shared)
+
+Ahora que `mod_security` está correctamente instalado, queda configurarlo.
+
+El módulo posee un archivo llamado `mod-security.conf` dentro del directorio `/etc/apache2/mod-available/`.
+
+```sh
+cat /etc/apache2/mods-available/mod-security.conf 
+        <IfModule security2_module>
+                # Default Debian dir for modsecurity's persistent data
+                SecDataDir /var/cache/modsecurity
+
+                # Include all the *.conf files in /etc/modsecurity.
+                # Keeping your local configuration in that directory
+                # will allow for an easy upgrade of THIS file and
+                # make your life easier
+                Include "/etc/modsecurity/*.conf"
+        </IfModule>
+```
+
+Para usar la recomendación por defecto, sólamente tenemos que usar el comando:
+
+        cp /etc/modsecurity/modsecurity.conf-recommended /etc/modsecurity/modsecurity.conf
+
+Como podemos ver dentro del archivo `/etc/modsecurity/modsecurity.conf`, el parámetro `SecRuleEngine` está fijado en `DetectionOnly`, por lo que solamente detectará los ataques y no hará nada al respecto.
+
+---
+
+Si queremos usar las reglas de detección que vienen por defecto proporcionadas por `OWASP`, podemos implementarlas de la siguiente manera:
+
+        cp /usr/share/modsecurity-crs/activated_rules/base_rules/modsecurity_crs_41_sql_injection_attacks.conf /etc/modsecurity/.
+
+De esta forma, ya tendríamos protección contra ataques de SQLi.
+
+También necesitamos añadir el archivo con todas las reglas de configuración `OWASP`:
+
+        cp /usr/share/modsecurity-crs/activated_rules/base_rules/modsecurity_crs_10_setup.conf /etc/modsecurity/.
+
+Finalmente, reiniciaremos `apache` mediante el comando:
+
+        service apache2 restart
+
+### 👀 Comprobación
+
+Para probar las reglas, atacaremos mediante SQLi nuestro sitio de pruebas:
+
+        http://ssi.web/?id=1' or '1' = '1
+
+Como en el archivo de configuración de `mod_security` se especifica que el archivo de log de auditoría es `/var/log/apache2/modsec_audit.log`, mostraremos el contenido del mismo mediante el comando:
+
+        tail -f /var/log/apache2/modsec_audit.log
+
+El resultado es el siguiente:
+
+        Message: Rule 7f548f412280 [id "950901"][file "/etc/modsecurity/modsecurity_crs_41_sql_injection_attacks.conf"][line "77"] - Execution error - PCRE limits exceeded (-8): (null).
+        Message: Warning. Pattern match "(?i:([\\s'\"`\xc2\xb4\xe2\x80\x99\xe2\x80\x98\\(\\)]*)?([\\d\\w]+)([\\s'\"`\xc2\xb4\xe2\x80\x99\xe2\x80\x98\\(\\)]*)?(?:=|<=>|r?like|sounds\\s+like|regexp)([\\s'\"`\xc2\xb4\xe2\x80\x99\xe2\x80\x98\\(\\)]*)?\\2|([\\s'\"`\xc2\xb4\xe2\x80\x99\xe2\x80\x98\ ..." at ARGS:var. [file "/usr/share/modsecurity-crs/activated_rules-testing/modsecurity_crs_41_sql_injection_attacks.conf"] [line "77"] [id "950901"] [rev "2.2.5"] [msg "SQL Injection Attack"] [data " '1'='1"] [severity "CRITICAL"] [tag "WEB_ATTACK/SQL_INJECTION"] [tag "WASCTC/WASC-19"] [tag "OWASP_TOP_10/A1"] [tag "OWASP_AppSensor/CIE1"] [tag "PCI/6.5.2"]
+
+Como podemos ver, se ha detectado correctamente el ataque SQLi.
+
+---
+
+Como apunte especial, estas reglas no son el remedio completo a la cura. Cualquier aplicación web que utilice este *WAF* para evitar ataques del estilo **XSS** con las reglas por defecto, detectará correctamente aquellos ataques con la etiqueta `<script>` o el comando `alert`, pero nada de eso sirve si se le echa un poco de imaginación.
+
+Algunas formas muy comunes de *bypassear* estas protecciones XSS son:
+
+```html
+<!-- Utilizar eventos en imágenes erróneas -->
+'><img src=x onError=prompt("SSI")>
+<!-- Intercalar mayúsculas y minúsculas y reemplazar espacios por sumas -->
+'><img+sRc=l+oNerrOr=prompt(document.cookie)+x>
+```
+
+---
+
+##### Me gustaría remarcar que me ha dado una pena tremenda no haber podido realizar las pruebas en el entorno propuesto.
+
+##### Disfruto muchísimo de la Seguridad Informática (sólamente hay que ver mi currículum) y espero dedicarme a tiempo completo a ella en un futuro.
+
+Mil gracias por todo y si surge cualquier duda no dudes en ponerte en contacto conmigo.
