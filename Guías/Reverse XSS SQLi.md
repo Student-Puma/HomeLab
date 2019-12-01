@@ -2,7 +2,7 @@
 
 ## 👨 Autor
 
-- [Diego Enrique Fontán Lorenzo](https://www.linkedin.com/in/kikepuma) [77482941N]
+- Diego Enrique Fontán Lorenzo [77482941N]
 
 ## 🅰️ Buffer Overflow
 ---
@@ -615,5 +615,7 @@ Algunas formas muy comunes de *bypassear* estas protecciones XSS son:
 ##### Me gustaría remarcar que me ha dado una pena tremenda no haber podido realizar las pruebas en el entorno propuesto.
 
 ##### Disfruto muchísimo de la Seguridad Informática (sólamente hay que ver mi currículum) y espero dedicarme a tiempo completo a ella en un futuro.
+
+- [LinkedIn](https://www.linkedin.com/in/kikepuma) (aunque no sea lo más apropiado para un trabajo de clase)
 
 Mil gracias por todo y si surge cualquier duda no dudes en ponerte en contacto conmigo.
